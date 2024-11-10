@@ -1,0 +1,56 @@
+clave_api = "tu_clave_api"
+usuario = "tu_usuario"
+contraseña = "tu_contraseña"
+par_de_divisas = "EURUSD"
+temporalidad = 1  
+fibrLevel = 61.8
+```
+
+*Funciones*
+```
+def obtener_token():
+ sesion = requests.session()
+ respuesta = sesion.post("(link unavailable)", json={"username": usuario, "password": contraseña})
+ return respuesta.cookies["token"]
+
+def obtener_max_min(token):
+ headers = {"Authorization": f"Bearer {token}"}
+ respuesta = requests.get(f"(link unavailable)")
+ datos = json.loads(respuesta.text)
+ maximo = max(datos["candles"])["high"]
+ minimo = min(datos["candles"])["low"]
+ return maximo, minimo
+
+def determinar_tendencia(token):
+ headers = {"Authorization": f"Bearer {token}"}
+ respuesta = requests.get(f"(link unavailable)")
+ datos = json.loads(respuesta.text)
+ media_movil_50 = sum([d["close"] for d in datos["candles"][-50:]]) / 50
+ media_movil_200 = sum([d["close"] for d in datos["candles"][-200:]]) / 200
+ return media_movil_50 > media_movil_200
+
+def comprar(token, precio):
+ headers = {"Authorization": f"Bearer {token}"}
+ respuesta = requests.post(f"(link unavailable)", headers=headers, json={"amount": 1, "price": precio})
+
+def vender(token, precio):
+ headers = {"Authorization": f"Bearer {token}"}
+ respuesta = requests.post(f"(link unavailable)", headers=headers, json={"amount": -1, "price": precio})
+```
+
+*Loop principal*
+```
+token = obtener_token()
+while True:
+ tendencia = determinar_tendencia(token)
+ maximo, minimo = obtener_max_min(token)
+ 
+ if tendencia:
+ if maximo * (1 - fibrLevel / 100) >= maximo:
+ comprar(token, maximo * (1 - fibrLevel / 100))
+ else:
+ if minimo * (1 + fibrLevel / 100) <= minimo:
+ vender(token, minimo * (1 + fibrLevel / 100))
+ 
+ time.sleep(60)
+```
